@@ -1,4 +1,4 @@
-"""Ví dụ AI agent có một công cụ tra tồn kho giả lập."""
+"""Example AI agent with a mock stock lookup tool."""
 
 import argparse
 import json
@@ -25,16 +25,16 @@ PROVIDERS = {
 
 
 def check_stock(product_code):
-    """Tra số lượng trong dữ liệu mẫu."""
+    """Look up the quantity in the sample data."""
     stock = {"A101": 17, "B202": 0}
     return {"quantity": stock.get(product_code.strip().upper())}
 
 
-# Schema cho model biết công cụ làm gì và cần tham số nào.
+# The tool schema tells the model what the tool does and which arguments it needs.
 STOCK_TOOL = {
     "type": "function",
     "name": "check_stock",
-    "description": "Tra tồn kho theo mã sản phẩm. null nghĩa là mã không tồn tại.",
+    "description": "Look up stock by product code. A null quantity means the code was not found.",
     "parameters": {
         "type": "object",
         "properties": {"product_code": {"type": "string"}},
@@ -50,18 +50,18 @@ def run_agent(question, provider=DEFAULT_PROVIDER):
     key_env = config["key_env"]
     api_key = os.getenv(key_env)
     if not api_key:
-        raise RuntimeError(f"Hãy đặt biến môi trường {key_env}.")
+        raise RuntimeError(f"Set the {key_env} environment variable.")
 
     client = OpenAI(api_key=api_key, base_url=config["base_url"])
     history = [{"role": "user", "content": question}]
 
     for _ in range(4):
-        # 1. Model chọn trả lời hoặc gọi công cụ.
+        # 1. The model decides whether to answer or call the tool.
         response = client.responses.create(
             model=config["model"],
             instructions=(
-                "Trả lời ngắn gọn bằng tiếng Việt. Nếu người dùng hỏi tồn kho "
-                "và có mã sản phẩm, hãy tra bằng check_stock. Nếu thiếu mã, hãy hỏi lại."
+                "Answer briefly in English. If the user asks about stock "
+                "and provides a product code, use check_stock. If the code is missing, ask for it."
             ),
             input=history,
             tools=[STOCK_TOOL],
@@ -70,23 +70,23 @@ def run_agent(question, provider=DEFAULT_PROVIDER):
         history.extend(response.output)
         tool_calls = [item for item in response.output if item.type == "function_call"]
         if not tool_calls:
-            return response.output_text or "Model chưa trả về câu trả lời."
+            return response.output_text or "The model returned no answer."
 
         for tool_call in tool_calls:
-            # 2. Python thực thi công cụ mà model yêu cầu.
+            # 2. Python runs the tool requested by the model.
             arguments = json.loads(tool_call.arguments)
             print(f"[Tool] {tool_call.name} {arguments}")
             result = check_stock(arguments["product_code"])
-            print(f"[Kết quả tool] {result}")
+            print(f"[Tool result] {result}")
 
-            # 3. Gắn kết quả với đúng lần gọi tool và gửi lại ở vòng kế tiếp.
+            # 3. Match the result to its tool call and send it back on the next turn.
             history.append({
                 "type": "function_call_output",
                 "call_id": tool_call.call_id,
                 "output": json.dumps(result),
             })
 
-    return "Agent đã đạt giới hạn 4 lượt gọi model."
+    return "The agent reached its limit of four model calls."
 
 
 if __name__ == "__main__":
@@ -95,10 +95,10 @@ if __name__ == "__main__":
         "--provider",
         choices=PROVIDERS,
         default=DEFAULT_PROVIDER,
-        help="Nhà cung cấp model (mặc định: %(default)s).",
+        help="Model provider (default is %(default)s).",
     )
     args = parser.parse_args()
 
-    question = input("Bạn hỏi gì? ").strip()
+    question = input("What would you like to ask? ").strip()
     if question:
         print(run_agent(question, provider=args.provider))
