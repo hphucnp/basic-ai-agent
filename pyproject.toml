@@ -3,4 +3,13 @@ name = "basic-ai-agent"
 version = "0.1.0"
 description = "A basic AI agent with a sample stock lookup tool"
 requires-python = ">=3.10"
-dependencies = ["openai>=2"]
+dependencies = [
+    "openai>=2",
+    "python-dotenv>=1.2.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+]
