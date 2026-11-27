@@ -1,53 +1,17 @@
-import json
-import os
+from agent import run_agent
 
-from dotenv import load_dotenv
-from openai import OpenAI
 
-from tools import check_inventory, tools
+def main():
+    while True:
+        question = input("Customer: ")
 
-load_dotenv()
+        if question.lower() == "exit":
+            break
 
-client = OpenAI(
-    api_key=os.environ["DEEPSEEK_API_KEY"],
-    base_url="https://api.deepseek.com",
-)
+        answer = run_agent(question)
 
-# response = client.responses.create(
-#     model="deepseek-flash",
-#     input="What is an AI agent?",
-#     reasoning={"effort": "none"},
-# )
+        print(f"Agent: {answer}")
 
-input_items = [
-    {"role": "user", "content": "Is the iPhone 16 Pro in stock?"}
-]
 
-response = client.responses.create(
-    model="deepseek-flash",
-    instructions="You are an e-commerce customer support agent.",
-    input="Is the iPhone 16 Pro in stock?",
-    tools=tools,
-    reasoning={"effort": "none"},
-)
-
-input_items.extend(response.output)
-for item in response.output:
-    if item.type == "function_call":
-        arguments = json.loads(item.arguments)
-
-        if item.name == "check_inventory":
-            print(f"Calling function: {item.name} with arguments: {arguments}")
-            result = check_inventory(**arguments)
-            input_items.append({"type": "function_call_output", "call_id": item.call_id, "output": json.dumps(result)})
-            print(result)
-            
-final_response = client.responses.create(
-    model="deepseek-flash",
-    instructions="You are an e-commerce customer support agent.",
-    input=input_items,
-    tools=tools,
-    reasoning={"effort": "none"},
-)
-
-print(final_response.output_text)
+if __name__ == "__main__":
+    main()

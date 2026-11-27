@@ -4,6 +4,20 @@ inventory = {
     "airpods-pro": 0,
 }
 
+orders = {
+    "12345": {
+        "status": "shipped",
+        "tracking_id": "TRACK001"
+    }
+}
+
+shipments = {
+    "TRACK001": {
+        "status": "in_transit",
+        "estimated_delivery": "2026-11-29",
+    }
+}
+
 tools = [
     {
         "type": "function",
@@ -20,7 +34,33 @@ tools = [
             "required": ["product_id"],
             "additionalProperties": False,
         },
-    }
+    },
+    {
+        "type": "function",
+        "name": "get_order",
+        "description": "Retrieve order information by order ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "order_id": {"type": "string"}
+            },
+            "required": ["order_id"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "type": "function",
+        "name": "track_shipment",
+        "description": "Track shipment using its tracking ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tracking_id": {"type": "string"}
+            },
+            "required": ["tracking_id"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -30,5 +70,21 @@ def check_inventory(product_id: str) -> dict:
         "quantity": inventory.get(product_id, 0),
     }
 
-def get_product_price(product_id: str) -> float:
-    return 999.99  # Placeholder price - replace with actual price lookup logic
+def get_order(order_id: str) -> dict:
+    return orders.get(
+        order_id,
+        {"error": "Order not found"},
+    )
+
+
+def track_shipment(tracking_id: str) -> dict:
+    return shipments.get(
+        tracking_id,
+        {"error": "Shipment not found"},
+    )
+    
+tool_registry = {
+    "check_inventory": check_inventory,
+    "get_order": get_order,
+    "track_shipment": track_shipment,
+}
